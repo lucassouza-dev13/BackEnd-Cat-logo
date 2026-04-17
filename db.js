@@ -9,4 +9,4 @@ const pool = new Pool({
 
 module.exports = pool;
 
-console.log("USANDO DATABASE_URL");
+console.log("DATABASE_URL:", process.env.DATABASE_URL);

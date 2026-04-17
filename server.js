@@ -1,3 +1,11 @@
+process.on("uncaughtException", err => {
+  console.error("ERRO NÃO TRATADO:", err);
+});
+
+process.on("unhandledRejection", err => {
+  console.error("PROMISE ERROR:", err);
+});
+
 require("dotenv").config();
 const express = require("express");
 const cors    = require("cors");
