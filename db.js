@@ -8,3 +8,5 @@ const pool = new Pool({
 });
 
 module.exports = pool;
+
+console.log("USANDO DATABASE_URL");
