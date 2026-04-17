@@ -1,11 +1,4 @@
-process.on("uncaughtException", err => {
-  console.error("ERRO NÃO TRATADO:", err);
-});
-
-process.on("unhandledRejection", err => {
-  console.error("PROMISE ERROR:", err);
-});
-
+console.log("TESTE LUCAS");
 require("dotenv").config();
 const express = require("express");
 const cors    = require("cors");
