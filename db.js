@@ -5,7 +5,7 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: false,
   },
-  family: 4, // 🔥 ISSO AQUI resolve o erro
+  family: 4, // força IPv4
 });
 
 module.exports = pool;
