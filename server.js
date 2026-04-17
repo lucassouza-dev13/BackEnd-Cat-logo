@@ -1,11 +1,10 @@
-console.log("TESTE LUCAS");
-console.log("TESTE LUCAS 2");
 require("dotenv").config();
 const express = require("express");
 const cors    = require("cors");
 const bcrypt  = require("bcryptjs");
 const jwt     = require("jsonwebtoken");
 const db      = require("./db"); 
+console.log("DB IMPORTADO:", !!require("./db"));
 
 const app    = express();
 const PORT   = process.env.PORT || 3001;
