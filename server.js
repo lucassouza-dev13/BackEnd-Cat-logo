@@ -164,3 +164,7 @@ app.get("/", (req, res) => res.json({ status: "LusTV backend rodando ✅" }));
 
 // ─── Iniciar servidor ─────────────────────────────────────────────────────────
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+
+app.get("/teste", (req, res) => {
+  res.send("ok");
+});
