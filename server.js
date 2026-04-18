@@ -7,7 +7,10 @@ const jwt = require("jsonwebtoken");
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  family: 4,
+});
+
+pool.on('connect', (client) => {
+  client.connection.stream.allowHalfOpen = true;
 });
 
 const app = express();
