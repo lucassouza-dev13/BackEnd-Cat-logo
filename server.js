@@ -4,13 +4,16 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
+const url = new URL(process.env.DATABASE_URL);
 
-pool.on('connect', (client) => {
-  client.connection.stream.allowHalfOpen = true;
+const pool = new Pool({
+  host: url.hostname,
+  port: url.port,
+  user: url.username,
+  password: url.password,
+  database: url.pathname.slice(1),
+  ssl: { rejectUnauthorized: false },
+  family: 4,
 });
 
 const app = express();
