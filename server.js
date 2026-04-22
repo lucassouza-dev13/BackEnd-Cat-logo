@@ -23,6 +23,9 @@ const SECRET = process.env.JWT_SECRET || "fallback_secret";
 app.use(cors());
 app.use(express.json());
 
+// Disponibiliza o pool para as rotas modulares via app.locals
+app.locals.pool = pool;
+
 function autenticar(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith("Bearer ")) {
@@ -35,6 +38,14 @@ function autenticar(req, res, next) {
     return res.status(401).json({ erro: "Token invalido ou expirado." });
   }
 }
+
+// ─── Rotas modulares ──────────────────────────────────────────────────────────
+const tendenciasRouter = require("./routes/tendencias");
+const perfilRouter = require("./routes/perfil");
+
+app.use("/tendencias", tendenciasRouter);
+app.use("/perfil", perfilRouter);
+// ─────────────────────────────────────────────────────────────────────────────
 
 app.get("/", (req, res) => res.json({ status: "LusTV backend rodando OK" }));
 
@@ -133,4 +144,4 @@ app.delete("/avaliacoes/:avaliacaoId", autenticar, async (req, res) => {
 
 app.listen(PORT, () => console.log("Servidor rodando na porta", PORT));
 
-// v2
+// v3
