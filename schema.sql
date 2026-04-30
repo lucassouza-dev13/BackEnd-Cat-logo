@@ -1,12 +1,9 @@
--- =============================================
--- Execute este script no SQL Editor do Supabase
--- =============================================
-
 -- Tabela de usuários
 CREATE TABLE IF NOT EXISTS usuarios (
   id        SERIAL PRIMARY KEY,
   nome      TEXT UNIQUE NOT NULL,
   senha     TEXT NOT NULL,           -- senha armazenada como hash bcrypt
+  avatar    TEXT DEFAULT NULL,       -- emoji ou URL do avatar do usuário
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -22,5 +19,6 @@ CREATE TABLE IF NOT EXISTS avaliacoes (
 );
 
 -- Índices para buscas rápidas
-CREATE INDEX IF NOT EXISTS idx_avaliacoes_filme ON avaliacoes(filme_id);
-CREATE INDEX IF NOT EXISTS idx_avaliacoes_usuario ON avaliacoes(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_avaliacoes_filme    ON avaliacoes(filme_id);
+CREATE INDEX IF NOT EXISTS idx_avaliacoes_usuario  ON avaliacoes(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_avaliacoes_criado_em ON avaliacoes(criado_em DESC);
