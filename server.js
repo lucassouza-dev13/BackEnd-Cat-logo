@@ -40,9 +40,11 @@ function autenticar(req, res, next) {
 
 const tendenciasRouter = require("./routes/tendencias");
 const perfilRouter = require("./routes/perfil");
+const socialRouter = require("./routes/social");
 
 app.use("/tendencias", tendenciasRouter);
 app.use("/perfil", perfilRouter);
+app.use("/social", socialRouter);
 
 app.get("/", (req, res) => res.json({ status: "LusTV backend rodando OK" }));
 
