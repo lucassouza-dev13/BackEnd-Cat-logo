@@ -26,10 +26,19 @@ router.post("/follow", autenticar, async (req, res) => {
   if (follower_id === following_id) return res.status(400).json({ erro: "Voce nao pode seguir a si mesmo." });
 
   try {
-    await pool.query(
-      "INSERT INTO follows (follower_id, following_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+    const result = await pool.query(
+      "INSERT INTO follows (follower_id, following_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *",
       [follower_id, following_id]
     );
+
+    // Só notifica se realmente inseriu (não era seguidor ainda)
+    if (result.rows.length > 0) {
+      await pool.query(
+        "INSERT INTO notificacoes (usuario_id, ator_id, tipo) VALUES ($1, $2, 'novo_seguidor')",
+        [following_id, follower_id]
+      );
+    }
+
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ erro: e.message });
@@ -140,6 +149,46 @@ router.get("/usuarios/buscar", autenticar, async (req, res) => {
       [`%${q.trim()}%`, req.usuario.id]
     );
     res.json(result.rows);
+  } catch (e) {
+    res.status(500).json({ erro: e.message });
+  }
+});
+
+// Buscar notificações do usuário logado
+router.get("/notificacoes", autenticar, async (req, res) => {
+  const pool = req.app.locals.pool;
+  try {
+    const result = await pool.query(
+      `SELECT
+         n.id,
+         n.tipo,
+         n.lida,
+         n.criado_em,
+         u.id     AS ator_id,
+         u.nome   AS ator_nome,
+         u.avatar AS ator_avatar
+       FROM notificacoes n
+       JOIN usuarios u ON u.id = n.ator_id
+       WHERE n.usuario_id = $1
+       ORDER BY n.criado_em DESC
+       LIMIT 20`,
+      [req.usuario.id]
+    );
+    res.json(result.rows);
+  } catch (e) {
+    res.status(500).json({ erro: e.message });
+  }
+});
+
+// Marcar todas as notificações como lidas
+router.patch("/notificacoes/lidas", autenticar, async (req, res) => {
+  const pool = req.app.locals.pool;
+  try {
+    await pool.query(
+      "UPDATE notificacoes SET lida = TRUE WHERE usuario_id = $1",
+      [req.usuario.id]
+    );
+    res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ erro: e.message });
   }
