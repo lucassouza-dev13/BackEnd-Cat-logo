@@ -115,6 +115,7 @@ app.post("/auth/entrar", async (req, res) => {
 
 // ── Esqueci a senha ────────────────────────────────────────────
 app.post("/auth/esqueci-senha", async (req, res) => {
+  console.log("ESQUECI SENHA chamado:", req.body);
   const { email } = req.body;
   if (!email) return res.status(400).json({ erro: "Email obrigatorio." });
 
