@@ -56,31 +56,13 @@ async function enviarEmail({ to, subject, html }) {
       html,
     }),
   });
+  const data = await res.json();
+  console.log("RESEND RESPONSE:", JSON.stringify(data)); // <- adiciona isso
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || "Erro ao enviar email.");
+    throw new Error(data.message || "Erro ao enviar email.");
   }
-  return res.json();
+  return data;
 }
-
-const tendenciasRouter = require("./routes/tendencias");
-const perfilRouter = require("./routes/perfil");
-const socialRouter = require("./routes/social");
-
-app.use("/tendencias", tendenciasRouter);
-app.use("/perfil", perfilRouter);
-app.use("/social", socialRouter);
-
-app.get("/", (req, res) => res.json({ status: "LusTV backend rodando OK" }));
-
-app.get("/ping", async (req, res) => {
-  try {
-    await pool.query("SELECT 1");
-    res.json({ db: "conectado" });
-  } catch (e) {
-    res.status(500).json({ db: "erro", detalhe: e.message });
-  }
-});
 
 // ── Cadastro ───────────────────────────────────────────────────
 app.post("/auth/cadastrar", async (req, res) => {
