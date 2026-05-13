@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 
-// Middleware de autenticação (importado do server.js via app.locals)
 function autenticar(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith("Bearer ")) {
@@ -19,13 +18,11 @@ function autenticar(req, res, next) {
 }
 
 // GET /perfil
-// Retorna dados completos do perfil + estatísticas
 router.get("/", autenticar, async (req, res) => {
   try {
     const { pool } = req.app.locals;
     const userId = req.usuario.id;
 
-    // Dados do usuário
     const userResult = await pool.query(
       "SELECT id, nome, avatar, criado_em FROM usuarios WHERE id = $1",
       [userId]
@@ -35,7 +32,6 @@ router.get("/", autenticar, async (req, res) => {
     }
     const usuario = userResult.rows[0];
 
-    // Estatísticas de avaliações
     const statsResult = await pool.query(
       `SELECT
         COUNT(*) AS total_avaliacoes,
@@ -48,7 +44,6 @@ router.get("/", autenticar, async (req, res) => {
     );
     const stats = statsResult.rows[0];
 
-    // Filmes avaliados recentemente
     const recentesResult = await pool.query(
       `SELECT filme_id, estrelas, comentario, criado_em
        FROM avaliacoes
@@ -79,8 +74,73 @@ router.get("/", autenticar, async (req, res) => {
   }
 });
 
+// GET /perfil/:id (perfil público)
+router.get("/:id", async (req, res) => {
+  try {
+    const { pool } = req.app.locals;
+    const userId = parseInt(req.params.id);
+
+    const userResult = await pool.query(
+      "SELECT id, nome, avatar, criado_em FROM usuarios WHERE id = $1",
+      [userId]
+    );
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ erro: "Usuário não encontrado." });
+    }
+    const usuario = userResult.rows[0];
+
+    const statsResult = await pool.query(
+      `SELECT
+        COUNT(*) AS total_avaliacoes,
+        ROUND(AVG(estrelas)::numeric, 1) AS media_estrelas,
+        COUNT(CASE WHEN estrelas = 5 THEN 1 END) AS notas_5
+      FROM avaliacoes
+      WHERE usuario_id = $1`,
+      [userId]
+    );
+
+    const recentesResult = await pool.query(
+      `SELECT filme_id, estrelas, comentario, criado_em
+       FROM avaliacoes
+       WHERE usuario_id = $1
+       ORDER BY criado_em DESC
+       LIMIT 10`,
+      [userId]
+    );
+
+    const seguidoresResult = await pool.query(
+      "SELECT COUNT(*) AS total FROM follows WHERE following_id = $1",
+      [userId]
+    );
+
+    const seguindoResult = await pool.query(
+      "SELECT COUNT(*) AS total FROM follows WHERE follower_id = $1",
+      [userId]
+    );
+
+    res.json({
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        avatar: usuario.avatar || null,
+        membro_desde: usuario.criado_em,
+      },
+      estatisticas: {
+        total_avaliacoes: parseInt(statsResult.rows[0].total_avaliacoes) || 0,
+        media_estrelas: parseFloat(statsResult.rows[0].media_estrelas) || 0,
+        notas_5: parseInt(statsResult.rows[0].notas_5) || 0,
+        seguidores: parseInt(seguidoresResult.rows[0].total) || 0,
+        seguindo: parseInt(seguindoResult.rows[0].total) || 0,
+      },
+      recentes: recentesResult.rows,
+    });
+  } catch (e) {
+    console.error("ERRO /perfil/:id GET:", e.message);
+    res.status(500).json({ erro: "Erro interno: " + e.message });
+  }
+});
+
 // PUT /perfil
-// Atualiza nome e/ou avatar do usuário
 router.put("/", autenticar, async (req, res) => {
   try {
     const { pool } = req.app.locals;
@@ -95,7 +155,6 @@ router.put("/", autenticar, async (req, res) => {
       return res.status(400).json({ erro: "Nome muito curto." });
     }
 
-    // Verifica se o novo nome já existe (se estiver trocando)
     if (nome) {
       const existe = await pool.query(
         "SELECT id FROM usuarios WHERE nome = $1 AND id != $2",
@@ -106,7 +165,6 @@ router.put("/", autenticar, async (req, res) => {
       }
     }
 
-    // Monta query dinamicamente
     const campos = [];
     const valores = [];
     let idx = 1;
@@ -128,7 +186,6 @@ router.put("/", autenticar, async (req, res) => {
 });
 
 // PUT /perfil/senha
-// Troca a senha do usuário
 router.put("/senha", autenticar, async (req, res) => {
   try {
     const { pool } = req.app.locals;
