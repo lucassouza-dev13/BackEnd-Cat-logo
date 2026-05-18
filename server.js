@@ -21,9 +21,13 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const SECRET = process.env.JWT_SECRET || "fallback_secret";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://lustv-ratings.up.railway.app";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://lustv.netlify.app";
 
-app.use(cors());
+app.use(cors({
+  origin: ['https://lustv.netlify.app', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 app.locals.pool = pool;
