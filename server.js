@@ -61,7 +61,7 @@ async function enviarEmail({ to, subject, html }) {
     }),
   });
   const data = await res.json();
-  console.log("RESEND RESPONSE:", JSON.stringify(data)); // <- adiciona isso
+  console.log("RESEND RESPONSE:", JSON.stringify(data));
   if (!res.ok) {
     throw new Error(data.message || "Erro ao enviar email.");
   }
@@ -77,11 +77,9 @@ app.post("/auth/cadastrar", async (req, res) => {
   if (!email || !email.includes("@")) return res.status(400).json({ erro: "Email invalido." });
 
   try {
-    // Verifica nome duplicado
     const nomeExiste = await pool.query("SELECT id FROM usuarios WHERE nome = $1", [nome.trim()]);
     if (nomeExiste.rows.length > 0) return res.status(409).json({ erro: "Nome de usuario ja em uso." });
 
-    // Verifica email duplicado
     const emailExiste = await pool.query("SELECT id FROM usuarios WHERE email = $1", [email.trim().toLowerCase()]);
     if (emailExiste.rows.length > 0) return res.status(409).json({ erro: "Email ja cadastrado." });
 
@@ -126,12 +124,11 @@ app.post("/auth/esqueci-senha", async (req, res) => {
   try {
     const result = await pool.query("SELECT id, nome FROM usuarios WHERE email = $1", [email.trim().toLowerCase()]);
 
-    // Responde sempre ok para não revelar se email existe
     if (result.rows.length === 0) return res.json({ ok: true });
 
     const user  = result.rows[0];
     const token = crypto.randomBytes(32).toString("hex");
-    const exp   = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
+    const exp   = new Date(Date.now() + 1000 * 60 * 60);
 
     await pool.query(
       "UPDATE usuarios SET reset_token = $1, reset_token_exp = $2 WHERE id = $3",
@@ -144,15 +141,87 @@ app.post("/auth/esqueci-senha", async (req, res) => {
       to: email.trim().toLowerCase(),
       subject: "Redefinição de senha — LusTV-Ratings",
       html: `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#111;color:#fff;padding:32px;border-radius:12px">
-          <h2 style="color:#e50914;margin-bottom:8px">LusTV-Ratings</h2>
-          <p>Olá, <strong>${user.nome}</strong>!</p>
-          <p>Recebemos uma solicitação para redefinir sua senha. Clique no botão abaixo:</p>
-          <a href="${link}" style="display:inline-block;margin:20px 0;background:#e50914;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600">
-            Redefinir senha
-          </a>
-          <p style="color:#888;font-size:13px">Este link expira em 1 hora. Se você não solicitou, ignore este email.</p>
-        </div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:'Inter',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;padding:40px 16px">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#111111;border:1px solid #1e1e1e;border-radius:16px;overflow:hidden">
+
+          <!-- Header com logo -->
+          <tr>
+            <td style="padding:28px 32px 20px">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding-right:10px;vertical-align:middle">
+                    <div style="width:32px;height:32px;background:#2d1b6e;border-radius:7px;display:inline-block;text-align:center;line-height:32px;font-family:Georgia,serif;font-size:22px;font-weight:700;color:#9b6fd4">L</div>
+                  </td>
+                  <td style="vertical-align:middle">
+                    <span style="font-size:18px;font-weight:600;color:#9b6fd4;letter-spacing:1px">LUSTV</span>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:8px 0 0;font-size:11px;color:#444;letter-spacing:2px;text-transform:uppercase">Avalie. Descubra. Compartilhe.</p>
+            </td>
+          </tr>
+
+          <!-- Linha roxa decorativa -->
+          <tr>
+            <td style="padding:0 32px">
+              <div style="border-left:3px solid #9b6fd4;padding-left:14px">
+                <p style="margin:0;font-size:22px;font-weight:600;color:#ffffff;line-height:1.2">Redefinir senha</p>
+                <p style="margin:4px 0 0;font-size:13px;color:#555">Recebemos sua solicitação</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Corpo -->
+          <tr>
+            <td style="padding:24px 32px">
+              <p style="margin:0 0 8px;font-size:15px;color:#cccccc">
+                Olá, <strong style="color:#ffffff">${user.nome}</strong>!
+              </p>
+              <p style="margin:0 0 28px;font-size:14px;color:#888888;line-height:1.6">
+                Recebemos uma solicitação para redefinir a senha da sua conta. Clique no botão abaixo para continuar:
+              </p>
+
+              <!-- Botão -->
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:8px;background:#9b6fd4">
+                    <a href="${link}" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px">
+                      → Redefinir senha
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 32px">
+              <div style="height:1px;background:#1e1e1e"></div>
+            </td>
+          </tr>
+
+          <!-- Rodapé -->
+          <tr>
+            <td style="padding:20px 32px 28px">
+              <p style="margin:0;font-size:12px;color:#444444;line-height:1.6">
+                Este link expira em <strong style="color:#555">1 hora</strong>. Se você não solicitou a redefinição, pode ignorar este email com segurança.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
       `,
     });
 
@@ -271,7 +340,6 @@ app.use("/tendencias", tendenciasRoutes);
 app.use("/perfil", perfilRoutes);
 app.use("/social", socialRoutes);
 
-
 app.listen(PORT, () => console.log("Servidor rodando na porta", PORT));
 
-// v5
+// v6
