@@ -24,7 +24,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://catalogo-filmes-sand.vercel.app";
 
 app.use(cors({
-  origin: ['catalogo-filmes-sand.vercel.app', 'http://localhost:3000'],
+  origin: ['https://catalogo-filmes-sand.vercel.app', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
