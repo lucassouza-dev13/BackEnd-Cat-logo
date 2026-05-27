@@ -340,49 +340,6 @@ app.use("/tendencias", tendenciasRoutes);
 app.use("/perfil", perfilRoutes);
 app.use("/social", socialRoutes);
 
-// ── Giant Bomb — Jogos ─────────────────────────────────────────
-const GB_KEY = process.env.GIANTBOMB_API_KEY;
-const GB_BASE = "https://www.giantbomb.com/api";
-const GB_HEADERS = { "User-Agent": "LusTV-Ratings/1.0" };
-
-app.get("/jogos/buscar", async (req, res) => {
-  const q = req.query.q;
-  if (!q) return res.status(400).json({ erro: "Query obrigatória." });
-  try {
-    const url = `${GB_BASE}/search/?api_key=${GB_KEY}&format=json&query=${encodeURIComponent(q)}&resources=game&field_list=id,name,image,deck,original_release_date,platforms`;
-    const r = await fetch(url, { headers: GB_HEADERS });
-    const data = await r.json();
-    res.json({ jogos: data.results || [] });
-  } catch (e) {
-    console.error("ERRO JOGOS BUSCAR:", e.message);
-    res.status(500).json({ erro: "Erro interno: " + e.message });
-  }
-});
-
-app.get("/jogos/populares", async (req, res) => {
-  try {
-    const url = `${GB_BASE}/games/?api_key=${GB_KEY}&format=json&sort=number_of_user_reviews:desc&field_list=id,name,image,deck,original_release_date,platforms&limit=20`;
-    const r = await fetch(url, { headers: GB_HEADERS });
-    const data = await r.json();
-    res.json({ jogos: data.results || [] });
-  } catch (e) {
-    console.error("ERRO JOGOS POPULARES:", e.message);
-    res.status(500).json({ erro: "Erro interno: " + e.message });
-  }
-});
-
-app.get("/jogos/:id", async (req, res) => {
-  try {
-    const url = `${GB_BASE}/game/${req.params.id}/?api_key=${GB_KEY}&format=json&field_list=id,name,image,deck,description,original_release_date,platforms,genres,developers,publishers`;
-    const r = await fetch(url, { headers: GB_HEADERS });
-    const data = await r.json();
-    res.json({ jogo: data.results });
-  } catch (e) {
-    console.error("ERRO JOGO DETALHE:", e.message);
-    res.status(500).json({ erro: "Erro interno: " + e.message });
-  }
-});
-
 app.listen(PORT, () => console.log("Servidor rodando na porta", PORT));
 
 // v6
