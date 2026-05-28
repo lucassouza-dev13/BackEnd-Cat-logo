@@ -34,6 +34,7 @@ async function getIgdbToken() {
     { method: "POST" }
   );
   const data = await r.json();
+  console.log("IGDB TOKEN RESPOSTA:", JSON.stringify(data));
   igdbToken = data.access_token;
   igdbTokenExp = Date.now() + (data.expires_in - 60) * 1000;
   return igdbToken;
