@@ -337,11 +337,14 @@ app.put("/avaliacoes/:filmeId", autenticar, async (req, res) => {
 });
 
 // ── Jogos (Giant Bomb API) ─────────────────────────────────────
+// ── Jogos (Giant Bomb API) ─────────────────────────────────────
 app.get("/jogos/populares", async (req, res) => {
   try {
     const url = `${GB_BASE}/games/?api_key=${GIANTBOMB_API_KEY}&format=json&sort=original_release_date:desc&field_list=id,name,image,original_release_date,deck&limit=20`;
     const r = await fetch(url, { headers: GB_HEADERS });
-    const data = await r.json();
+    const text = await r.text();
+    console.log("GIANT BOMB RESPOSTA:", text.slice(0, 300)); // log para debug
+    const data = JSON.parse(text);
     res.json(data);
   } catch (e) {
     console.error("ERRO JOGOS POPULARES:", e.message);
