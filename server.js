@@ -22,9 +22,36 @@ const PORT = process.env.PORT || 3001;
 const SECRET = process.env.JWT_SECRET || "fallback_secret";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://catalogo-filmes-sand.vercel.app";
-const GIANTBOMB_API_KEY = process.env.GIANTBOMB_API_KEY;
-const GB_BASE = "https://www.giantbomb.com/api";
-const GB_HEADERS = { "User-Agent": "LusTV-Ratings/1.0" };
+const IGDB_CLIENT_ID = process.env.IGDB_CLIENT_ID;
+const IGDB_CLIENT_SECRET = process.env.IGDB_CLIENT_SECRET;
+let igdbToken = null;
+let igdbTokenExp = 0;
+
+async function getIgdbToken() {
+  if (igdbToken && Date.now() < igdbTokenExp) return igdbToken;
+  const r = await fetch(
+    `https://id.twitch.tv/oauth2/token?client_id=${IGDB_CLIENT_ID}&client_secret=${IGDB_CLIENT_SECRET}&grant_type=client_credentials`,
+    { method: "POST" }
+  );
+  const data = await r.json();
+  igdbToken = data.access_token;
+  igdbTokenExp = Date.now() + (data.expires_in - 60) * 1000;
+  return igdbToken;
+}
+
+async function igdbFetch(endpoint, body) {
+  const token = await getIgdbToken();
+  const r = await fetch(`https://api.igdb.com/v4/${endpoint}`, {
+    method: "POST",
+    headers: {
+      "Client-ID": IGDB_CLIENT_ID,
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "text/plain",
+    },
+    body,
+  });
+  return r.json();
+}
 
 app.use(cors({
   origin: ['https://catalogo-filmes-sand.vercel.app', 'http://localhost:3000'],
@@ -336,15 +363,15 @@ app.put("/avaliacoes/:filmeId", autenticar, async (req, res) => {
   }
 });
 
-// ── Jogos (Giant Bomb API) ─────────────────────────────────────
+// ── Jogos (IGDB API) ───────────────────────────────────────────
 app.get("/jogos/populares", async (req, res) => {
   try {
-    const url = `${GB_BASE}/games/?api_key=${GIANTBOMB_API_KEY}&format=json&sort=original_release_date:desc&field_list=id,name,image,original_release_date,deck&limit=20`;
-    console.log("GIANT BOMB URL:", url);
-    const r = await fetch(url, { headers: GB_HEADERS });
-    const text = await r.text();
-    console.log("GIANT BOMB RESPOSTA:", text.slice(0, 300));
-    const data = JSON.parse(text);
+    const data = await igdbFetch("games", `
+      fields id,name,cover.url,first_release_date,summary,genres.name,platforms.name,rating;
+      sort rating desc;
+      where rating > 75 & rating_count > 100 & cover != null;
+      limit 20;
+    `);
     res.json(data);
   } catch (e) {
     console.error("ERRO JOGOS POPULARES:", e.message);
@@ -356,9 +383,12 @@ app.get("/jogos/buscar", async (req, res) => {
   const { q } = req.query;
   if (!q) return res.status(400).json({ erro: "Parâmetro q obrigatório." });
   try {
-    const url = `${GB_BASE}/search/?api_key=${GIANTBOMB_API_KEY}&format=json&query=${encodeURIComponent(q)}&resources=game&field_list=id,name,image,original_release_date,deck`;
-    const r = await fetch(url, { headers: GB_HEADERS });
-    const data = await r.json();
+    const data = await igdbFetch("games", `
+      search "${q}";
+      fields id,name,cover.url,first_release_date,summary,genres.name,platforms.name,rating;
+      where cover != null;
+      limit 20;
+    `);
     res.json(data);
   } catch (e) {
     console.error("ERRO BUSCAR JOGO:", e.message);
@@ -368,10 +398,11 @@ app.get("/jogos/buscar", async (req, res) => {
 
 app.get("/jogos/:id", async (req, res) => {
   try {
-    const url = `${GB_BASE}/game/${req.params.id}/?api_key=${GIANTBOMB_API_KEY}&format=json&field_list=id,name,image,original_release_date,deck,genres,platforms`;
-    const r = await fetch(url, { headers: GB_HEADERS });
-    const data = await r.json();
-    res.json(data);
+    const data = await igdbFetch("games", `
+      fields id,name,cover.url,first_release_date,summary,genres.name,platforms.name,rating,screenshots.url,involved_companies.company.name;
+      where id = ${req.params.id};
+    `);
+    res.json(data[0] || null);
   } catch (e) {
     console.error("ERRO DETALHE JOGO:", e.message);
     res.status(500).json({ erro: "Erro interno: " + e.message });
