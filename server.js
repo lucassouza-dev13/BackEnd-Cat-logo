@@ -22,6 +22,9 @@ const PORT = process.env.PORT || 3001;
 const SECRET = process.env.JWT_SECRET || "fallback_secret";
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://catalogo-filmes-sand.vercel.app";
+const GIANTBOMB_API_KEY = process.env.GIANTBOMB_API_KEY;
+const GB_BASE = "https://www.giantbomb.com/api";
+const GB_HEADERS = { "User-Agent": "LusTV-Ratings/1.0" };
 
 app.use(cors({
   origin: ['https://catalogo-filmes-sand.vercel.app', 'http://localhost:3000'],
@@ -260,6 +263,7 @@ app.post("/auth/redefinir-senha", async (req, res) => {
 
 app.get("/auth/me", autenticar, (req, res) => res.json({ usuario: req.usuario }));
 
+// ── Avaliações ─────────────────────────────────────────────────
 app.get("/avaliacoes/:filmeId", async (req, res) => {
   try {
     const result = await pool.query(
@@ -332,6 +336,46 @@ app.put("/avaliacoes/:filmeId", autenticar, async (req, res) => {
   }
 });
 
+// ── Jogos (Giant Bomb API) ─────────────────────────────────────
+app.get("/jogos/populares", async (req, res) => {
+  try {
+    const url = `${GB_BASE}/games/?api_key=${GIANTBOMB_API_KEY}&format=json&sort=original_release_date:desc&field_list=id,name,image,original_release_date,deck&limit=20`;
+    const r = await fetch(url, { headers: GB_HEADERS });
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    console.error("ERRO JOGOS POPULARES:", e.message);
+    res.status(500).json({ erro: "Erro interno: " + e.message });
+  }
+});
+
+app.get("/jogos/buscar", async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ erro: "Parâmetro q obrigatório." });
+  try {
+    const url = `${GB_BASE}/search/?api_key=${GIANTBOMB_API_KEY}&format=json&query=${encodeURIComponent(q)}&resources=game&field_list=id,name,image,original_release_date,deck`;
+    const r = await fetch(url, { headers: GB_HEADERS });
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    console.error("ERRO BUSCAR JOGO:", e.message);
+    res.status(500).json({ erro: "Erro interno: " + e.message });
+  }
+});
+
+app.get("/jogos/:id", async (req, res) => {
+  try {
+    const url = `${GB_BASE}/game/${req.params.id}/?api_key=${GIANTBOMB_API_KEY}&format=json&field_list=id,name,image,original_release_date,deck,genres,platforms`;
+    const r = await fetch(url, { headers: GB_HEADERS });
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    console.error("ERRO DETALHE JOGO:", e.message);
+    res.status(500).json({ erro: "Erro interno: " + e.message });
+  }
+});
+
+// ── Rotas externas ─────────────────────────────────────────────
 const tendenciasRoutes = require("./routes/tendencias");
 const perfilRoutes = require("./routes/perfil");
 const socialRoutes = require("./routes/social");
@@ -342,4 +386,4 @@ app.use("/social", socialRoutes);
 
 app.listen(PORT, () => console.log("Servidor rodando na porta", PORT));
 
-// v6
+// v7
