@@ -84,22 +84,23 @@ router.get("/feed", autenticar, async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT
-         av.id          AS avaliacao_id,
-         av.filme_id,
-         av.estrelas,
-         av.comentario,
-         av.criado_em,
-         u.id           AS usuario_id,
-         u.nome         AS usuario_nome
-       FROM follows f
-       JOIN avaliacoes av ON av.usuario_id = f.following_id
-       JOIN usuarios   u  ON u.id          = av.usuario_id
-       WHERE f.follower_id = $1
-       ORDER BY av.criado_em DESC
-       LIMIT $2 OFFSET $3`,
-      [req.usuario.id, limit, offset]
-    );
+  `SELECT
+     av.id          AS avaliacao_id,
+     av.filme_id,
+     av.estrelas,
+     av.comentario,
+     av.criado_em,
+     av.tipo,
+     u.id           AS usuario_id,
+     u.nome         AS usuario_nome
+   FROM follows f
+   JOIN avaliacoes av ON av.usuario_id = f.following_id
+   JOIN usuarios   u  ON u.id          = av.usuario_id
+   WHERE f.follower_id = $1
+   ORDER BY av.criado_em DESC
+   LIMIT $2 OFFSET $3`,
+  [req.usuario.id, limit, offset]
+);
 
     const countRes = await pool.query(
       `SELECT COUNT(*) FROM follows f
