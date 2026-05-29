@@ -294,7 +294,7 @@ app.get("/auth/me", autenticar, (req, res) => res.json({ usuario: req.usuario })
 app.get("/avaliacoes/:filmeId", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT av.id, av.estrelas, av.comentario, av.criado_em, u.nome AS autor, u.id AS autor_id FROM avaliacoes av JOIN usuarios u ON u.id = av.usuario_id WHERE av.filme_id = $1 ORDER BY av.criado_em DESC",
+      "SELECT av.id, av.estrelas, av.comentario, av.criado_em, av.tipo, u.nome AS autor, u.id AS autor_id FROM avaliacoes av JOIN usuarios u ON u.id = av.usuario_id WHERE av.filme_id = $1 ORDER BY av.criado_em DESC",
       [req.params.filmeId]
     );
     res.json({ avaliacoes: result.rows });
@@ -305,12 +305,12 @@ app.get("/avaliacoes/:filmeId", async (req, res) => {
 });
 
 app.post("/avaliacoes/:filmeId", autenticar, async (req, res) => {
-  const { estrelas, comentario } = req.body;
+  const { estrelas, comentario, tipo } = req.body;
   if (!estrelas || estrelas < 1 || estrelas > 5) return res.status(400).json({ erro: "Nota invalida." });
   try {
     const result = await pool.query(
-      "INSERT INTO avaliacoes (filme_id, usuario_id, estrelas, comentario) VALUES ($1, $2, $3, $4) RETURNING id, estrelas, comentario, criado_em",
-      [req.params.filmeId, req.usuario.id, estrelas, comentario || ""]
+      "INSERT INTO avaliacoes (filme_id, usuario_id, estrelas, comentario, tipo) VALUES ($1, $2, $3, $4, $5) RETURNING id, estrelas, comentario, criado_em",
+      [req.params.filmeId, req.usuario.id, estrelas, comentario || "", tipo || "movie"]
     );
     res.status(201).json({ avaliacao: result.rows[0] });
   } catch (e) {
