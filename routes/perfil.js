@@ -213,4 +213,69 @@ router.put("/senha", autenticar, async (req, res) => {
   }
 });
 
+// POST /perfil/conquistas/verificar
+router.post("/conquistas/verificar", autenticar, async (req, res) => {
+  const { pool } = req.app.locals;
+  const userId = req.usuario.id;
+
+  try {
+    // Busca estatísticas do usuário
+    const statsRes = await pool.query(
+      `SELECT
+        COUNT(*) AS total,
+        COUNT(CASE WHEN tipo = 'game' THEN 1 END) AS jogos,
+        COUNT(CASE WHEN tipo = 'tv'   THEN 1 END) AS series
+       FROM avaliacoes WHERE usuario_id = $1`,
+      [userId]
+    );
+    const s = statsRes.rows[0];
+    const total  = parseInt(s.total);
+    const jogos  = parseInt(s.jogos);
+    const series = parseInt(s.series);
+
+    // Definição das conquistas
+    const CONQUISTAS = [
+      { id: 'estreante',    emoji: '🎬', nome: 'Estreante',    desc: 'Fez sua primeira avaliação',         cond: total  >= 1   },
+      { id: 'cinefilo',     emoji: '🍿', nome: 'Cinéfilo',     desc: '10 avaliações feitas',               cond: total  >= 10  },
+      { id: 'critico',      emoji: '🎭', nome: 'Crítico',      desc: '25 avaliações feitas',               cond: total  >= 25  },
+      { id: 'mestre',       emoji: '🏆', nome: 'Mestre',       desc: '50 avaliações feitas',               cond: total  >= 50  },
+      { id: 'lendario',     emoji: '👑', nome: 'Lendário',     desc: '100 avaliações feitas',              cond: total  >= 100 },
+      { id: 'gamer',        emoji: '🎮', nome: 'Gamer',        desc: '5 jogos avaliados',                  cond: jogos  >= 5   },
+      { id: 'maratonista',  emoji: '📺', nome: 'Maratonista',  desc: '5 séries avaliadas',                 cond: series >= 5   },
+    ];
+
+    // Busca conquistas já desbloqueadas
+    const jaRes = await pool.query(
+      "SELECT conquista_id FROM conquistas_usuarios WHERE usuario_id = $1",
+      [userId]
+    );
+    const jaDesbloqueadas = new Set(jaRes.rows.map(r => r.conquista_id));
+
+    // Filtra as novas
+    const novas = CONQUISTAS.filter(c => c.cond && !jaDesbloqueadas.has(c.id));
+
+    // Salva as novas no banco
+    for (const c of novas) {
+      await pool.query(
+        "INSERT INTO conquistas_usuarios (usuario_id, conquista_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [userId, c.id]
+      );
+    }
+
+    // Retorna todas desbloqueadas + quais são novas
+    const todasRes = await pool.query(
+      "SELECT conquista_id, desbloqueada_em FROM conquistas_usuarios WHERE usuario_id = $1 ORDER BY desbloqueada_em ASC",
+      [userId]
+    );
+
+    res.json({
+      novas:  novas,
+      todas:  todasRes.rows,
+    });
+  } catch (e) {
+    console.error("ERRO CONQUISTAS:", e.message);
+    res.status(500).json({ erro: e.message });
+  }
+});
+
 module.exports = router;
