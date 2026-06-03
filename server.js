@@ -55,7 +55,7 @@ async function igdbFetch(endpoint, body) {
 
 app.use(cors({
   origin: ['https://catalogo-filmes-sand.vercel.app', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
