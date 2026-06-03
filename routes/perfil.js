@@ -45,7 +45,7 @@ router.get("/", autenticar, async (req, res) => {
     const stats = statsResult.rows[0];
 
     const recentesResult = await pool.query(
-      `SELECT filme_id, estrelas, comentario, criado_em
+      `SELECT id, filme_id, estrelas, comentario, criado_em
        FROM avaliacoes
        WHERE usuario_id = $1
        ORDER BY criado_em DESC
@@ -100,7 +100,7 @@ router.get("/:id", async (req, res) => {
     );
 
     const recentesResult = await pool.query(
-      `SELECT filme_id, estrelas, comentario, criado_em
+      `SELECT id, filme_id, estrelas, comentario, criado_em
        FROM avaliacoes
        WHERE usuario_id = $1
        ORDER BY criado_em DESC
