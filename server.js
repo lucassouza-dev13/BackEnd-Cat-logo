@@ -366,11 +366,15 @@ app.put("/avaliacoes/:filmeId", autenticar, async (req, res) => {
 // ── Jogos (IGDB API) ───────────────────────────────────────────
 app.get("/jogos/populares", async (req, res) => {
   try {
+    const page   = Math.max(1, parseInt(req.query.page) || 1);
+    const limit  = 20;
+    const offset = (page - 1) * limit;
     const data = await igdbFetch("games", `
       fields id,name,cover.url,first_release_date,summary,genres.name,platforms.name,rating;
       sort rating desc;
       where rating > 75 & rating_count > 100 & cover != null;
-      limit 20;
+      limit ${limit};
+      offset ${offset};
     `);
     res.json(data);
   } catch (e) {
