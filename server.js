@@ -417,10 +417,12 @@ app.get("/jogos/:id", async (req, res) => {
 const tendenciasRoutes = require("./routes/tendencias");
 const perfilRoutes = require("./routes/perfil");
 const socialRoutes = require("./routes/social");
+const listasRoutes = require("./routes/listas");
 
 app.use("/tendencias", tendenciasRoutes);
 app.use("/perfil", perfilRoutes);
 app.use("/social", socialRoutes);
+app.use("/listas", listasRoutes);
 
 app.listen(PORT, () => console.log("Servidor rodando na porta", PORT));
 
